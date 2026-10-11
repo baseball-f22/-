@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Pro Rapsodo Analytics - 運科投球分析與追蹤系統</title>
+    <title>Pro Rapsodo Analytics - 雲端即時同步版</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Plotly.js -->
@@ -17,7 +17,6 @@
         .glass-card { background: rgba(26, 38, 66, 0.75); backdrop-filter: blur(8px); border: 1px solid rgba(71, 85, 105, 0.4); border-radius: 0.75rem; }
         .input-field { background-color: #0f172a; border: 1px solid #334155; color: #f8fafc; border-radius: 0.5rem; padding: 0.5rem 0.75rem; font-size: 0.875rem; }
         .input-field:focus { outline: none; border-color: #38bdf8; ring: 1px solid #38bdf8; }
-        .tab-btn.active { background-color: #0284c7; color: #ffffff; border-color: #38bdf8; }
     </style>
 </head>
 <body class="p-3 md:p-6 pb-16">
@@ -27,9 +26,9 @@
         <header class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 pb-4 border-b border-slate-700/80">
             <div>
                 <h1 class="text-2xl md:text-3xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-sky-400 via-teal-300 to-indigo-300 flex items-center gap-2.5">
-                    <i data-lucide="activity" class="text-sky-400"></i> PRO RAPSODO PITCHING ANALYTICS
+                    <i data-lucide="cloud" class="text-sky-400"></i> PRO RAPSODO ANALYTICS
                 </h1>
-                <p class="text-slate-400 text-xs md:text-sm mt-1">進階投球運動生物力學、球路位移 (Break) 與放球一致性監控</p>
+                <p class="text-slate-400 text-xs md:text-sm mt-1">雲端即時同步系統（支援電腦、iPad、手機多裝置連動）</p>
             </div>
             
             <div class="flex flex-wrap items-center gap-2.5 w-full md:w-auto">
@@ -41,6 +40,10 @@
                     <i data-lucide="file-up" class="w-4 h-4"></i> 匯入 Rapsodo CSV
                     <input type="file" id="csvFileInput" accept=".csv" class="hidden" onchange="importCSV(event)">
                 </label>
+
+                <button onclick="clearAllCloudData()" class="flex items-center gap-1.5 px-3 py-1.5 bg-rose-950 hover:bg-rose-900 text-rose-300 active:scale-95 rounded-lg text-xs font-semibold border border-rose-800 transition">
+                    <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i> 清空雲端並重載
+                </button>
 
                 <button onclick="exportProcessedData()" class="flex items-center gap-1.5 px-3 py-1.5 bg-slate-800 hover:bg-slate-700 active:scale-95 rounded-lg text-xs font-semibold border border-slate-600 transition">
                     <i data-lucide="download" class="w-3.5 h-3.5"></i> 匯出報表
@@ -55,7 +58,7 @@
                     <i data-lucide="user" class="text-sky-400 w-4 h-4"></i>
                     <span class="font-medium text-xs md:text-sm text-slate-300">投手：</span>
                     <select id="athleteSelect" onchange="onAthleteChange()" class="input-field min-w-[140px] font-bold text-sky-300">
-                        <option value="">載入中...</option>
+                        <option value="">雲端載入中...</option>
                     </select>
                 </div>
 
@@ -78,7 +81,6 @@
 
             <div class="flex items-center gap-2 justify-between md:justify-end">
                 <div id="athleteProfileBadge" class="text-xs text-slate-300 flex items-center gap-3 bg-slate-900/60 px-3 py-1.5 rounded-lg border border-slate-700/60">
-                    <!-- 動態載入個人資訊 -->
                 </div>
                 <button onclick="openAthleteModal()" class="flex items-center gap-1 px-2.5 py-1.5 bg-slate-800 hover:bg-slate-700 text-sky-300 border border-slate-600 rounded-lg text-xs">
                     <i data-lucide="edit-3" class="w-3.5 h-3.5"></i> 編輯資料
@@ -86,7 +88,7 @@
             </div>
         </div>
 
-        <!-- KPI Grid: 擴充為專業運科六大核心指標 -->
+        <!-- KPI Grid: 六大核心指標 -->
         <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
             <div class="glass-card p-3 border-l-4 border-l-sky-500">
                 <div class="text-slate-400 text-xs">總投球數 / 球種</div>
@@ -113,7 +115,7 @@
             <div class="glass-card p-3 border-l-4 border-l-purple-500">
                 <div class="text-slate-400 text-xs">旋轉效率 (Efficiency)</div>
                 <div id="kpiEfficiency" class="text-xl md:text-2xl font-black text-purple-300 mt-1">--</div>
-                <div id="kpiTilt" class="text-[11px] text-purple-200/80 mt-0.5">主時鐘軸: --</div>
+                <div id="kpiTilt" class="text-[11px] text-purple-200/80 mt-0.5">有效自旋: --</div>
             </div>
 
             <div class="glass-card p-3 border-l-4 border-l-teal-500">
@@ -135,7 +137,7 @@
 
         <!-- 視覺化圖表矩陣 -->
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-5">
-            <!-- 圖表 1: 球種位移分佈 (Pitch Break Plot / Movement) -->
+            <!-- 圖表 1: 水平 / 垂直位移圖 -->
             <div class="glass-card p-4">
                 <div class="flex justify-between items-center mb-2">
                     <h2 class="text-sm md:text-base font-bold flex items-center gap-2">
@@ -146,7 +148,7 @@
                 <div id="breakPlot" class="w-full h-[320px]"></div>
             </div>
 
-            <!-- 圖表 2: 好球帶進壘點 (Strike Zone Location) -->
+            <!-- 圖表 2: 好球帶進壘點 -->
             <div class="glass-card p-4">
                 <div class="flex justify-between items-center mb-2">
                     <h2 class="text-sm md:text-base font-bold flex items-center gap-2">
@@ -157,7 +159,7 @@
                 <div id="zonePlot" class="w-full h-[320px]"></div>
             </div>
 
-            <!-- 圖表 3: 縱向成長追蹤 (球速與轉速歷程) -->
+            <!-- 圖表 3: 時序趨勢 -->
             <div class="glass-card p-4">
                 <div class="flex justify-between items-center mb-2">
                     <h2 class="text-sm md:text-base font-bold flex items-center gap-2">
@@ -168,7 +170,7 @@
                 <div id="trendChart" class="w-full h-[300px]"></div>
             </div>
 
-            <!-- 圖表 4: 放球點穿透圖 (Release Point Tunneling) -->
+            <!-- 圖表 4: 出球座標 -->
             <div class="glass-card p-4">
                 <div class="flex justify-between items-center mb-2">
                     <h2 class="text-sm md:text-base font-bold flex items-center gap-2">
@@ -180,7 +182,7 @@
             </div>
         </div>
 
-        <!-- 球種軍火庫統計表 (Arsenal Summary Table) -->
+        <!-- 球種軍火庫統計表 -->
         <div class="glass-card p-4 md:p-5">
             <h3 class="text-sm md:text-base font-bold text-sky-300 mb-3 flex items-center gap-2">
                 <i data-lucide="layers" class="w-4 h-4"></i> 投手球種矩陣總覽 (Arsenal Overview)
@@ -231,7 +233,7 @@
         </div>
     </div>
 
-    <!-- Firebase 模組 -->
+    <!-- Firebase 即時同步核心[cite: 3] -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
         import { getDatabase, ref, onValue, set } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
@@ -256,26 +258,24 @@
 
         const syncEl = document.getElementById('syncStatus');
         if (syncEl) {
-            syncEl.innerHTML = '<span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span> 雲端連線正常';
+            syncEl.innerHTML = '<span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span> 雲端同步連線中';
             syncEl.className = "px-3 py-1.5 bg-emerald-950/80 text-emerald-400 border border-emerald-700/50 rounded-full text-xs font-medium flex items-center gap-2";
         }
 
+        // 即時監聽雲端紀錄（任何裝置更新時自動同步）[cite: 3]
         onValue(window.rapsodoRecordsRef, (snapshot) => {
             const data = snapshot.val();
-            if (data !== null) {
-                window.records = Array.isArray(data) ? data : Object.values(data);
-                localStorage.setItem('rapsodo_records', JSON.stringify(window.records));
-            }
+            window.records = data ? (Array.isArray(data) ? data : Object.values(data)) : [];
+            localStorage.setItem('rapsodo_records', JSON.stringify(window.records));
             updateDropdowns();
             updateDashboard();
         });
 
+        // 即時監聽選手基本資料[cite: 3]
         onValue(window.rapsodoAthletesRef, (snapshot) => {
             const data = snapshot.val();
-            if (data !== null) {
-                window.athletes = data;
-                localStorage.setItem('rapsodo_athletes', JSON.stringify(window.athletes));
-            }
+            window.athletes = data || {};
+            localStorage.setItem('rapsodo_athletes', JSON.stringify(window.athletes));
             updateDropdowns();
             updateDashboard();
         });
@@ -300,11 +300,23 @@
             updateDashboard();
         });
 
+        // 雙向儲存：同時寫入瀏覽器快取與 Firebase 即時雲端[cite: 3]
         function saveData() {
             localStorage.setItem('rapsodo_athletes', JSON.stringify(window.athletes));
             localStorage.setItem('rapsodo_records', JSON.stringify(window.records));
             if (window.rapsodoRecordsRef && window.set) window.set(window.rapsodoRecordsRef, window.records);
             if (window.rapsodoAthletesRef && window.set) window.set(window.rapsodoAthletesRef, window.athletes);
+        }
+
+        // 清空雲端與本機資料（解決舊資料覆蓋問題）
+        function clearAllCloudData() {
+            if (!confirm('確定要清空雲端資料庫嗎？\n此動作將同步清除所有裝置（包含 iPad）上的舊資料。\n清空後請重新點擊「匯入 Rapsodo CSV」，系統將完整上傳所有進階運科數據！')) return;
+            window.records = [];
+            window.athletes = {};
+            saveData();
+            updateDropdowns();
+            updateDashboard();
+            alert('雲端資料庫已清空！請重新點選右上角「匯入 Rapsodo CSV」進行完整同步。');
         }
 
         function getPitchName(pt) {
@@ -313,6 +325,20 @@
                 'CB': '曲球', 'CU': '曲球', 'SL': '滑球', 'CH': '變速球', 'SP': '指叉球', 'FS': '指叉球', 'FC': '卡特球'
             };
             return map[pt] || pt;
+        }
+
+        function getVal(row, candidates) {
+            const keys = Object.keys(row);
+            for (let c of candidates) {
+                const target = c.toLowerCase().replace(/[\s_\(\)\/\-]/g, '');
+                for (let k of keys) {
+                    const cleanK = k.toLowerCase().replace(/[\s_\(\)\/\-]/g, '');
+                    if (cleanK === target && row[k] !== undefined && row[k] !== null && row[k] !== '') {
+                        return row[k];
+                    }
+                }
+            }
+            return null;
         }
 
         function importCSV(e) {
@@ -325,42 +351,71 @@
                 skipEmptyLines: true,
                 complete: function(results) {
                     let count = 0;
-                    results.data.forEach(row => {
-                        const pitchId = String(row['PitchID'] || row['Pitch Id'] || '');
-                        const speed = parseFloat(row['RelSpeed (MPH)'] || row['Velocity (MPH)']);
-                        const pitchType = (row['Pitch Type'] || row['PitchType'] || 'OTHER').toUpperCase().trim();
-                        if (!pitchId || isNaN(speed)) return;
-                        if (window.records.some(r => r.pitchId === pitchId)) return;
+                    results.data.forEach((row, idx) => {
+                        const pitchId = String(getVal(row, ['PitchID', 'Pitch Id', 'Pitch_Id', 'Id']) || `pitch_${Date.now()}_${idx}`);
+                        const rawSpeed = getVal(row, ['RelSpeed (MPH)', 'RelSpeed', 'Velocity', 'Speed', 'Velocity (MPH)', 'BallSpeed']);
+                        const speed = parseFloat(rawSpeed);
+                        if (isNaN(speed)) return;
 
-                        let name = (row['Pitcher First Name'] || row['Pitcher Name'] || '未命名投手').trim();
-                        if (row['Pitcher Last Name']) name = `${row['Pitcher Last Name']} ${name}`.trim();
+                        const rawPitchType = getVal(row, ['Pitch Type', 'PitchType', 'TaggedPitchType', 'Type']);
+                        const pitchType = (rawPitchType ? String(rawPitchType).trim().toUpperCase() : 'OTHER');
 
-                        const rawDate = String(row['Pitch Created At'] || row['Date'] || '');
+                        let name = getVal(row, ['Pitcher First Name', 'Pitcher Name', 'Pitcher', 'Player Name', 'Player']);
+                        if (!name) name = '未命名投手';
+                        name = String(name).trim();
+
+                        const lName = getVal(row, ['Pitcher Last Name']);
+                        if (lName) name = `${String(lName).trim()} ${name}`;
+
+                        const rawDate = String(getVal(row, ['Pitch Created At', 'Date', 'Time', 'DateTime']) || '');
                         let dateStr = rawDate.split(' ')[0] || new Date().toISOString().split('T')[0];
 
-                        // 提煉運科核心欄位
-                        const spin = parseFloat(row['SpinRate (RPM)'] || row['Total Spin'] || 0) || null;
-                        const spinEff = parseFloat(row['SpinEfficiency (%)'] || row['True Spin %'] || 0) || null;
-                        const ivb = parseFloat(row['InducedVertBreak (in)'] || row['Vertical Break (in)'] || 0) || 0;
-                        const hb = parseFloat(row['HorzBreak (in)'] || row['Horizontal Break (in)'] || 0) || 0;
-                        const relHeight = parseFloat(row['RelHeight (ft)'] || 0) || null;
-                        const relSide = parseFloat(row['RelSide (ft)'] || 0) || null;
-                        const extension = parseFloat(row['Extension (ft)'] || 0) || null;
-                        const pz = parseFloat(row['PlateLocHeight (ft)'] || 0) || null;
-                        const px = parseFloat(row['PlateLocSide (ft)'] || 0) || null;
+                        const rawSpin = getVal(row, ['SpinRate (RPM)', 'SpinRate', 'Spin Rate', 'Total Spin', 'Spin']);
+                        const spin = rawSpin !== null ? parseFloat(rawSpin) : null;
+
+                        const rawEff = getVal(row, ['SpinEfficiency (%)', 'Spin Efficiency', 'SpinEfficiency', 'True Spin %', 'Efficiency']);
+                        const spinEff = rawEff !== null ? parseFloat(rawEff) : null;
+
+                        const rawIVB = getVal(row, ['InducedVertBreak (in)', 'InducedVertBreak', 'Vertical Break (in)', 'VertBreak', 'IVB']);
+                        const ivb = rawIVB !== null ? parseFloat(rawIVB) : 0;
+
+                        const rawHB = getVal(row, ['HorzBreak (in)', 'HorzBreak', 'Horizontal Break (in)', 'HorizontalBreak', 'HB']);
+                        const hb = rawHB !== null ? parseFloat(rawHB) : 0;
+
+                        const rawRelH = getVal(row, ['RelHeight (ft)', 'RelHeight', 'Release Height', 'ReleaseHeight']);
+                        const relHeight = rawRelH !== null ? parseFloat(rawRelH) : null;
+
+                        const rawRelS = getVal(row, ['RelSide (ft)', 'RelSide', 'Release Side', 'ReleaseSide']);
+                        const relSide = rawRelS !== null ? parseFloat(rawRelS) : null;
+
+                        const rawExt = getVal(row, ['Extension (ft)', 'Extension']);
+                        const extension = rawExt !== null ? parseFloat(rawExt) : null;
+
+                        const rawPZ = getVal(row, ['PlateLocHeight (ft)', 'PlateLocHeight', 'pz', 'Plate Height']);
+                        const pz = rawPZ !== null ? parseFloat(rawPZ) : null;
+
+                        const rawPX = getVal(row, ['PlateLocSide (ft)', 'PlateLocSide', 'px', 'Plate Side']);
+                        const px = rawPX !== null ? parseFloat(rawPX) : null;
 
                         if (!window.athletes[name]) {
                             window.athletes[name] = { gender: '男', hand: 'R', height: '', weight: '' };
                         }
 
-                        window.records.push({
+                        const existingIdx = window.records.findIndex(r => r.pitchId === pitchId);
+                        const recordObj = {
                             pitchId, name, date: dateStr, pitchType, speed,
                             spin, spinEff, ivb, hb, relHeight, relSide, extension, pz, px
-                        });
+                        };
+
+                        if (existingIdx >= 0) {
+                            window.records[existingIdx] = recordObj;
+                        } else {
+                            window.records.push(recordObj);
+                        }
                         count++;
                     });
 
-                    alert(`成功整合 ${count} 筆 Rapsodo 投球數據！`);
+                    alert(`成功讀取 ${count} 筆完整運科數據，正在同步上傳至雲端資料庫！`);
                     saveData();
                     updateDropdowns();
                     updateDashboard();
@@ -393,7 +448,6 @@
 
             const athRecords = window.records.filter(r => r.name === ath);
 
-            // 球種下拉選單
             const ptCounts = {};
             athRecords.forEach(r => { ptCounts[r.pitchType] = (ptCounts[r.pitchType] || 0) + 1; });
             const pTypes = Object.keys(ptCounts).sort((a,b) => ptCounts[b] - ptCounts[a]);
@@ -406,7 +460,6 @@
                 ptSelect.appendChild(opt);
             });
 
-            // 日期下拉選單
             const dates = [...new Set(athRecords.map(r => r.date))].sort().reverse();
             dateSelect.innerHTML = `<option value="ALL">全部訓練日 (${dates.length} 天)</option>`;
             dates.forEach(d => {
@@ -423,7 +476,6 @@
             const date = document.getElementById('dateFilterSelect').value;
             if (!ath) return;
 
-            // 個人標籤
             const profile = window.athletes[ath] || {};
             document.getElementById('athleteProfileBadge').innerHTML = `
                 <span class="font-bold text-sky-400 text-sm">${ath}</span>
@@ -456,26 +508,22 @@
             const maxVelo = Math.max(...speeds);
             const avgVelo = speeds.reduce((a,b)=>a+b, 0) / count;
             
-            // 球速標準差
             let veloSD = 0;
             if (count > 1) {
                 const variance = speeds.reduce((acc, v) => acc + Math.pow(v - avgVelo, 2), 0) / (count - 1);
                 veloSD = Math.sqrt(variance);
             }
 
-            // 轉速與效率
             const spins = data.filter(d => d.spin > 0).map(d => d.spin);
             const avgSpin = spins.length ? (spins.reduce((a,b)=>a+b, 0) / spins.length) : null;
             const effs = data.filter(d => d.spinEff > 0).map(d => d.spinEff);
             const avgEff = effs.length ? (effs.reduce((a,b)=>a+b, 0) / effs.length) : null;
 
-            // 位移
-            const ivbs = data.map(d => d.ivb).filter(v => v !== 0);
+            const ivbs = data.map(d => d.ivb).filter(v => v !== 0 && v !== null);
             const avgIVB = ivbs.length ? (ivbs.reduce((a,b)=>a+b, 0) / ivbs.length) : 0;
-            const hbs = data.map(d => d.hb).filter(v => v !== 0);
+            const hbs = data.map(d => d.hb).filter(v => v !== 0 && v !== null);
             const avgHB = hbs.length ? (hbs.reduce((a,b)=>a+b, 0) / hbs.length) : 0;
 
-            // 放球點一致性（高度標準差）
             const relHeights = data.filter(d => d.relHeight > 0).map(d => d.relHeight);
             let relHeightSD = 0;
             if (relHeights.length > 1) {
@@ -483,7 +531,6 @@
                 relHeightSD = Math.sqrt(relHeights.reduce((acc, v) => acc + Math.pow(v - hAvg, 2), 0) / (relHeights.length - 1));
             }
 
-            // 更新 DOM
             document.getElementById('kpiCount').textContent = count + ' 球';
             document.getElementById('kpiPitchShare').textContent = `佔整體 ${((count / totalAthPitches) * 100).toFixed(1)}%`;
             document.getElementById('kpiAvgVelo').textContent = avgVelo.toFixed(1);
@@ -521,20 +568,22 @@
                 showlegend: false
             };
 
-            // 1. Break Plot (水平 / 垂直位移圖)
+            // 1. Break Plot
             const breakTraces = [];
             const types = [...new Set(data.map(d => d.pitchType))];
             types.forEach(pt => {
-                const subset = data.filter(d => d.pitchType === pt);
-                breakTraces.push({
-                    x: subset.map(d => d.hb),
-                    y: subset.map(d => d.ivb),
-                    mode: 'markers',
-                    type: 'scatter',
-                    name: pt,
-                    marker: { size: 7, color: PITCH_COLORS[pt] || '#38bdf8', opacity: 0.8 },
-                    text: subset.map(d => `${pt}: ${d.speed.toFixed(1)}mph`)
-                });
+                const subset = data.filter(d => d.pitchType === pt && (d.hb !== 0 || d.ivb !== 0));
+                if (subset.length) {
+                    breakTraces.push({
+                        x: subset.map(d => d.hb),
+                        y: subset.map(d => d.ivb),
+                        mode: 'markers',
+                        type: 'scatter',
+                        name: pt,
+                        marker: { size: 7, color: PITCH_COLORS[pt] || '#38bdf8', opacity: 0.8 },
+                        text: subset.map(d => `${pt}: ${d.speed.toFixed(1)}mph`)
+                    });
+                }
             });
 
             Plotly.newPlot('breakPlot', breakTraces, {
@@ -546,7 +595,7 @@
                 ]
             }, { responsive: true, displayModeBar: false });
 
-            // 2. Strike Zone Plot (好球帶進壘點)
+            // 2. Strike Zone Plot
             const zoneTraces = [];
             let inZoneCount = 0;
             const validPlateData = data.filter(d => d.px !== null && d.pz !== null);
@@ -560,14 +609,16 @@
 
             types.forEach(pt => {
                 const subset = validPlateData.filter(d => d.pitchType === pt);
-                zoneTraces.push({
-                    x: subset.map(d => d.px),
-                    y: subset.map(d => d.pz),
-                    mode: 'markers',
-                    type: 'scatter',
-                    name: pt,
-                    marker: { size: 8, color: PITCH_COLORS[pt] || '#38bdf8' }
-                });
+                if (subset.length) {
+                    zoneTraces.push({
+                        x: subset.map(d => d.px),
+                        y: subset.map(d => d.pz),
+                        mode: 'markers',
+                        type: 'scatter',
+                        name: pt,
+                        marker: { size: 8, color: PITCH_COLORS[pt] || '#38bdf8' }
+                    });
+                }
             });
 
             Plotly.newPlot('zonePlot', zoneTraces, {
@@ -575,12 +626,11 @@
                 xaxis: { title: '本壘板水平位置 (ft)', range: [-2.2, 2.2], zerolinecolor: '#334155', gridcolor: '#1e293b' },
                 yaxis: { title: '離地高度 (ft)', range: [0.5, 4.5], zerolinecolor: '#334155', gridcolor: '#1e293b' },
                 shapes: [
-                    // 標準好球帶矩形 (17吋寬約 1.42ft, 高度約 1.5 - 3.5ft)
                     { type: 'rect', xref: 'x', yref: 'y', x0: -0.85, y0: 1.5, x1: 0.85, y1: 3.5, line: { color: '#f43f5e', width: 2 } }
                 ]
             }, { responsive: true, displayModeBar: false });
 
-            // 3. Trend Chart (時序趨勢)
+            // 3. Trend Chart
             const groupedDate = {};
             data.forEach(d => {
                 if (!groupedDate[d.date]) groupedDate[d.date] = { speeds: [], spins: [] };
@@ -604,7 +654,7 @@
                 yaxis2: { title: '轉速 (RPM)', overlaying: 'y', side: 'right', font: { color: '#818cf8' }, showgrid: false }
             }, { responsive: true, displayModeBar: false });
 
-            // 4. Release Plot (出球座標一致性)
+            // 4. Release Plot
             const releaseData = data.filter(d => d.relSide !== null && d.relHeight !== null);
             Plotly.newPlot('releasePlot', [{
                 x: releaseData.map(d => d.relSide),
@@ -650,10 +700,10 @@
                 const effs = list.filter(l => l.spinEff > 0).map(l => l.spinEff);
                 const avgEff = effs.length ? (effs.reduce((a,b)=>a+b, 0) / effs.length).toFixed(1) + '%' : '--';
 
-                const ivbs = list.filter(l => l.ivb !== 0).map(l => l.ivb);
+                const ivbs = list.filter(l => l.ivb !== 0 && l.ivb !== null).map(l => l.ivb);
                 const avgIVB = ivbs.length ? (ivbs.reduce((a,b)=>a+b, 0) / ivbs.length).toFixed(1) + '"' : '--';
 
-                const hbs = list.filter(l => l.hb !== 0).map(l => l.hb);
+                const hbs = list.filter(l => l.hb !== 0 && l.hb !== null).map(l => l.hb);
                 const avgHB = hbs.length ? (hbs.reduce((a,b)=>a+b, 0) / hbs.length).toFixed(1) + '"' : '--';
 
                 const strikes = list.filter(l => l.px >= -0.85 && l.px <= 0.85 && l.pz >= 1.5 && l.pz <= 3.5).length;
