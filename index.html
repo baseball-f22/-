@@ -28,7 +28,7 @@
                 <h1 class="text-2xl md:text-3xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-sky-400 via-teal-300 to-indigo-300 flex items-center gap-2.5">
                     <i data-lucide="activity" class="text-sky-400"></i> PRO RAPSODO PITCHING ANALYTICS
                 </h1>
-                <p class="text-slate-400 text-xs md:text-sm mt-1">進階投球運動生物力學、梯隊群組分類與逐球歷程追蹤</p>
+                <p class="text-slate-400 text-xs md:text-sm mt-1">進階投球運動生物力學、梯隊群組分類與單日球種數據連動</p>
             </div>
             
             <div class="flex flex-wrap items-center gap-2.5 w-full md:w-auto">
@@ -54,7 +54,7 @@
         <!-- Filters & Profile Bar -->
         <div class="glass-card p-4 flex flex-col md:flex-row justify-between items-stretch md:items-center gap-4">
             <div class="flex flex-wrap items-center gap-3">
-                <!-- 新增：選手群組篩選 -->
+                <!-- 群組篩選 -->
                 <div class="flex items-center gap-2">
                     <i data-lucide="users" class="text-indigo-400 w-4 h-4"></i>
                     <span class="font-medium text-xs md:text-sm text-slate-300">群組：</span>
@@ -71,10 +71,11 @@
                     </select>
                 </div>
 
+                <!-- 日期選擇：切換時連動球種與總覽表 -->
                 <div class="flex items-center gap-2">
                     <i data-lucide="calendar" class="text-teal-400 w-4 h-4"></i>
-                    <span class="font-medium text-xs md:text-sm text-slate-300">日期：</span>
-                    <select id="dateFilterSelect" onchange="updateDashboard()" class="input-field min-w-[140px] font-bold text-teal-300">
+                    <span class="font-medium text-xs md:text-sm text-slate-300">訓練日期：</span>
+                    <select id="dateFilterSelect" onchange="onDateFilterChange()" class="input-field min-w-[140px] font-bold text-teal-300">
                         <option value="ALL">全部訓練日</option>
                     </select>
                 </div>
@@ -100,7 +101,7 @@
         <!-- KPI Grid: 六大核心指標 -->
         <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
             <div class="glass-card p-3 border-l-4 border-l-sky-500">
-                <div class="text-slate-400 text-xs">總投球數 / 球種</div>
+                <div class="text-slate-400 text-xs">投球數 / 球種</div>
                 <div id="kpiCount" class="text-xl md:text-2xl font-black text-white mt-1">--</div>
                 <div id="kpiPitchShare" class="text-[11px] text-sky-400/80 mt-0.5">佔比: --</div>
             </div>
@@ -191,11 +192,17 @@
             </div>
         </div>
 
-        <!-- 球種軍火庫統計表 -->
+        <!-- 球種軍火庫統計表：依選定日期動態彙整 -->
         <div class="glass-card p-4 md:p-5">
-            <h3 class="text-sm md:text-base font-bold text-sky-300 mb-3 flex items-center gap-2">
-                <i data-lucide="layers" class="w-4 h-4"></i> 投手球種矩陣總覽 (Arsenal Overview)
-            </h3>
+            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 mb-3">
+                <h3 class="text-sm md:text-base font-bold text-sky-300 flex items-center gap-2">
+                    <i data-lucide="layers" class="w-4 h-4"></i>
+                    <span id="arsenalTableHeaderTitle">全部球種總覽矩陣 (Arsenal Overview)</span>
+                </h3>
+                <span id="arsenalTableDateBadge" class="text-xs px-2.5 py-0.5 rounded bg-sky-950/80 text-sky-300 border border-sky-700/60 font-semibold">
+                    統計範圍：全部訓練日
+                </span>
+            </div>
             <div class="overflow-x-auto">
                 <table class="w-full text-left text-xs md:text-sm text-slate-300">
                     <thead class="bg-slate-900/90 text-slate-400 uppercase text-[11px]">
@@ -251,7 +258,7 @@
 
     </div>
 
-    <!-- 編輯選手 Modal（支援群組設定） -->
+    <!-- 編輯選手 Modal -->
     <div id="athleteModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm hidden flex items-center justify-center p-4 z-50">
         <div class="glass-card p-6 w-full max-w-md space-y-4 border border-sky-500/40 shadow-2xl">
             <div class="flex justify-between items-center pb-2 border-b border-slate-700">
@@ -260,8 +267,6 @@
             </div>
             <form onsubmit="handleAthleteSubmit(event)" class="space-y-3 text-sm">
                 <div><label class="block text-slate-400 text-xs mb-1">姓名</label><input type="text" id="modalName" readonly class="input-field w-full bg-slate-900 text-slate-400 cursor-not-allowed font-bold"></div>
-                
-                <!-- 群組設定 -->
                 <div>
                     <label class="block text-slate-400 text-xs mb-1">所屬群組 / 梯隊</label>
                     <input type="text" id="modalGroup" list="groupSuggestions" placeholder="例如：先發組、牛棚組、二軍..." class="input-field w-full text-indigo-300 font-semibold">
@@ -273,7 +278,6 @@
                         <option value="成棒組">
                     </datalist>
                 </div>
-
                 <div class="grid grid-cols-2 gap-2">
                     <div><label class="block text-slate-400 text-xs mb-1">性別</label><select id="modalGender" class="input-field w-full"><option value="男">男</option><option value="女">女</option></select></div>
                     <div><label class="block text-slate-400 text-xs mb-1">慣用手</label><select id="modalHand" class="input-field w-full"><option value="R">右投 (RHP)</option><option value="L">左投 (LHP)</option></select></div>
@@ -290,7 +294,7 @@
         </div>
     </div>
 
-    <!-- Firebase 即時同步核心[cite: 3] -->
+    <!-- Firebase 即時同步核心 -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
         import { getDatabase, ref, onValue, set } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
@@ -363,7 +367,7 @@
         }
 
         function clearAllCloudData() {
-            if (!confirm('確定要清空雲端資料庫嗎？\n清空後請立即點選「匯入 Rapsodo CSV」，系統將把所有轉速、位移與好球帶數據完整同步！')) return;
+            if (!confirm('確定要清空雲端資料庫嗎？\n清空後請立即點選「匯入 Rapsodo CSV」，系統將把所有數據完整同步！')) return;
             window.records = [];
             window.athletes = {};
             saveData();
@@ -492,7 +496,6 @@
             const grpSelect = document.getElementById('groupSelect');
             const prevGrp = grpSelect.value || 'ALL';
 
-            // 統計所有存在的群組名稱
             const groups = new Set();
             Object.values(window.athletes).forEach(a => {
                 if (a.group && a.group.trim()) groups.add(a.group.trim());
@@ -508,13 +511,11 @@
             onGroupChange(false);
         }
 
-        // 當切換群組時，更新投手下拉選單
         function onGroupChange(triggerUpdate = true) {
             const selectedGroup = document.getElementById('groupSelect').value;
             const athSelect = document.getElementById('athleteSelect');
             const prevAth = athSelect.value;
 
-            // 取得所有選手名單，若有設定群組則過濾
             let allNames = [...new Set([...Object.keys(window.athletes), ...window.records.map(r => r.name)])];
             if (selectedGroup !== 'ALL') {
                 allNames = allNames.filter(name => (window.athletes[name] && window.athletes[name].group === selectedGroup));
@@ -537,8 +538,8 @@
 
         function onAthleteChange(triggerUpdate = true) {
             const ath = document.getElementById('athleteSelect').value;
-            const ptSelect = document.getElementById('pitchTypeSelect');
             const dateSelect = document.getElementById('dateFilterSelect');
+            const prevDate = dateSelect.value;
             if (!ath) {
                 if (triggerUpdate) updateDashboard();
                 return;
@@ -550,15 +551,47 @@
             const dates = [...new Set(athRecords.map(r => r.date))].sort().reverse();
             dateSelect.innerHTML = `<option value="ALL">全部訓練日 (${dates.length} 天)</option>`;
             dates.forEach(d => {
-                const opt = document.createElement('option'); opt.value = d; opt.textContent = d;
+                const count = athRecords.filter(r => r.date === d).length;
+                const opt = document.createElement('option');
+                opt.value = d;
+                opt.textContent = `${d} (${count} 球)`;
                 dateSelect.appendChild(opt);
             });
 
-            // 球種下拉選單
+            if (dates.includes(prevDate)) dateSelect.value = prevDate;
+            else dateSelect.value = 'ALL';
+
+            // 依據目前日期選單更新球種選單
+            updatePitchTypeOptions();
+
+            if (triggerUpdate) updateDashboard();
+        }
+
+        // 當使用者切換日期時觸發
+        function onDateFilterChange() {
+            updatePitchTypeOptions();
+            updateDashboard();
+        }
+
+        // 核心連動：依據選取的日期，動態更新球種下拉選單的球數
+        function updatePitchTypeOptions() {
+            const ath = document.getElementById('athleteSelect').value;
+            const selectedDate = document.getElementById('dateFilterSelect').value;
+            const ptSelect = document.getElementById('pitchTypeSelect');
+            const prevPt = ptSelect.value;
+            if (!ath) return;
+
+            // 根據是否選取特定日期篩選資料
+            let athRecords = window.records.filter(r => r.name === ath);
+            if (selectedDate !== 'ALL') {
+                athRecords = athRecords.filter(r => r.date === selectedDate);
+            }
+
             const ptCounts = {};
             athRecords.forEach(r => { ptCounts[r.pitchType] = (ptCounts[r.pitchType] || 0) + 1; });
             const pTypes = Object.keys(ptCounts).sort((a,b) => ptCounts[b] - ptCounts[a]);
 
+            const dateText = selectedDate === 'ALL' ? '全部' : selectedDate;
             ptSelect.innerHTML = `<option value="ALL">全部球種總覽 (${athRecords.length} 球)</option>`;
             pTypes.forEach(pt => {
                 const opt = document.createElement('option');
@@ -567,7 +600,11 @@
                 ptSelect.appendChild(opt);
             });
 
-            if (triggerUpdate) updateDashboard();
+            if (['ALL', ...pTypes].includes(prevPt)) {
+                ptSelect.value = prevPt;
+            } else {
+                ptSelect.value = 'ALL';
+            }
         }
 
         function updateDashboard() {
@@ -579,7 +616,7 @@
                 document.getElementById('athleteProfileBadge').innerHTML = '<span class="text-slate-500">無選定投手</span>';
                 updateKPIs([], 0, pt);
                 renderCharts([], pt);
-                renderArsenalTable([]);
+                renderArsenalTable([], date);
                 renderPitchLogTable([], date, pt);
                 return;
             }
@@ -595,19 +632,25 @@
                 <span>${profile.weight ? profile.weight + 'kg' : '--'}</span>
             `;
 
+            // 當前篩選條件
             let filtered = window.records.filter(r => r.name === ath);
-            const totalAthPitches = filtered.length;
-
             if (date !== 'ALL') filtered = filtered.filter(r => r.date === date);
+
+            const totalInSelectedDate = filtered.length; // 該選定日期下的總球數
+
             if (pt !== 'ALL') filtered = filtered.filter(r => r.pitchType === pt);
 
-            updateKPIs(filtered, totalAthPitches, pt);
+            updateKPIs(filtered, totalInSelectedDate, pt);
             renderCharts(filtered, pt);
-            renderArsenalTable(window.records.filter(r => r.name === ath && (date === 'ALL' || r.date === date)));
+            
+            // 重要：軍火庫總覽表傳入「選定日期內的所有球種資料」
+            const arsenalData = window.records.filter(r => r.name === ath && (date === 'ALL' || r.date === date));
+            renderArsenalTable(arsenalData, date);
+
             renderPitchLogTable(filtered, date, pt);
         }
 
-        function updateKPIs(data, totalAthPitches, currentPt) {
+        function updateKPIs(data, totalInScope, currentPt) {
             if (data.length === 0) {
                 ['kpiCount','kpiAvgVelo','kpiMaxVelo','kpiSpin','kpiEfficiency','kpiIVB','kpiHB','kpiRelease','kpiEval'].forEach(id => {
                     document.getElementById(id).textContent = '--';
@@ -650,7 +693,7 @@
             }
 
             document.getElementById('kpiCount').textContent = count + ' 球';
-            document.getElementById('kpiPitchShare').textContent = `佔比 ${((count / totalAthPitches) * 100).toFixed(1)}%`;
+            document.getElementById('kpiPitchShare').textContent = totalInScope > 0 ? `佔當日 ${((count / totalInScope) * 100).toFixed(1)}%` : '--';
             document.getElementById('kpiAvgVelo').textContent = avgVelo.toFixed(1);
             document.getElementById('kpiMaxVelo').textContent = maxVelo.toFixed(1);
             document.getElementById('kpiVeloSD').textContent = count > 1 ? `球速 SD: ±${veloSD.toFixed(2)} mph` : '單球無標準差';
@@ -780,10 +823,18 @@
             }, { responsive: true, displayModeBar: false });
         }
 
-        function renderArsenalTable(records) {
+        // 軍火庫總覽表：根據選取的日期精準計算
+        function renderArsenalTable(records, selectedDate) {
             const tbody = document.getElementById('arsenalTableBody');
+            const dateBadge = document.getElementById('arsenalTableDateBadge');
             tbody.innerHTML = '';
-            if (!records.length) return;
+
+            dateBadge.textContent = selectedDate === 'ALL' ? '統計範圍：全部訓練日' : `統計範圍：${selectedDate}`;
+
+            if (!records.length) {
+                tbody.innerHTML = `<tr><td colspan="9" class="p-4 text-center text-slate-500">此日期下無投球數據</td></tr>`;
+                return;
+            }
 
             const groups = {};
             records.forEach(r => {
@@ -812,10 +863,10 @@
                 const avgEff = effs.length ? (effs.reduce((a,b)=>a+b, 0) / effs.length).toFixed(1) + '%' : '--';
 
                 const ivbs = list.filter(l => l.ivb !== null).map(l => l.ivb);
-                const avgIVB = ivbs.length ? (ivbs.reduce((a,b)=>a+b, 0) / ivbs.length) : 0;
+                const avgIVB = ivbs.length ? (ivbs.reduce((a,b)=>a+b, 0) / ivbs.length).toFixed(1) + '"' : '--';
 
                 const hbs = list.filter(l => l.hb !== null).map(l => l.hb);
-                const avgHB = hbs.length ? (hbs.reduce((a,b)=>a+b, 0) / hbs.length) : 0;
+                const avgHB = hbs.length ? (hbs.reduce((a,b)=>a+b, 0) / hbs.length).toFixed(1) + '"' : '--';
 
                 const strikes = list.filter(l => l.isStrike).length;
                 const strikePct = list.length ? ((strikes / list.length) * 100).toFixed(0) + '%' : '--';
@@ -833,8 +884,8 @@
                         <td class="p-2.5 text-purple-300 font-medium">±${sd}</td>
                         <td class="p-2.5 text-indigo-300">${avgSpin}</td>
                         <td class="p-2.5 text-teal-300">${avgEff}</td>
-                        <td class="p-2.5 text-cyan-300">${avgIVB.toFixed(1)}"</td>
-                        <td class="p-2.5 text-sky-300">${avgHB.toFixed(1)}"</td>
+                        <td class="p-2.5 text-cyan-300">${avgIVB}</td>
+                        <td class="p-2.5 text-sky-300">${avgHB}</td>
                         <td class="p-2.5 text-rose-300 font-semibold">${strikePct}</td>
                     </tr>
                 `;
