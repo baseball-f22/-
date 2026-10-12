@@ -28,7 +28,7 @@
                 <h1 class="text-2xl md:text-3xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-sky-400 via-teal-300 to-indigo-300 flex items-center gap-2.5">
                     <i data-lucide="activity" class="text-sky-400"></i> PRO RAPSODO PITCHING ANALYTICS
                 </h1>
-                <p class="text-slate-400 text-xs md:text-sm mt-1">進階投球運動生物力學、球路位移 (Break) 與逐球歷程追蹤</p>
+                <p class="text-slate-400 text-xs md:text-sm mt-1">進階投球運動生物力學、梯隊群組分類與逐球歷程追蹤</p>
             </div>
             
             <div class="flex flex-wrap items-center gap-2.5 w-full md:w-auto">
@@ -54,6 +54,15 @@
         <!-- Filters & Profile Bar -->
         <div class="glass-card p-4 flex flex-col md:flex-row justify-between items-stretch md:items-center gap-4">
             <div class="flex flex-wrap items-center gap-3">
+                <!-- 新增：選手群組篩選 -->
+                <div class="flex items-center gap-2">
+                    <i data-lucide="users" class="text-indigo-400 w-4 h-4"></i>
+                    <span class="font-medium text-xs md:text-sm text-slate-300">群組：</span>
+                    <select id="groupSelect" onchange="onGroupChange()" class="input-field min-w-[130px] font-bold text-indigo-300 border-indigo-500/40">
+                        <option value="ALL">全部群組</option>
+                    </select>
+                </div>
+
                 <div class="flex items-center gap-2">
                     <i data-lucide="user" class="text-sky-400 w-4 h-4"></i>
                     <span class="font-medium text-xs md:text-sm text-slate-300">投手：</span>
@@ -64,16 +73,16 @@
 
                 <div class="flex items-center gap-2">
                     <i data-lucide="calendar" class="text-teal-400 w-4 h-4"></i>
-                    <span class="font-medium text-xs md:text-sm text-slate-300">選擇日期：</span>
-                    <select id="dateFilterSelect" onchange="updateDashboard()" class="input-field min-w-[150px] font-bold text-teal-300">
+                    <span class="font-medium text-xs md:text-sm text-slate-300">日期：</span>
+                    <select id="dateFilterSelect" onchange="updateDashboard()" class="input-field min-w-[140px] font-bold text-teal-300">
                         <option value="ALL">全部訓練日</option>
                     </select>
                 </div>
 
                 <div class="flex items-center gap-2">
                     <i data-lucide="baseball" class="text-amber-400 w-4 h-4"></i>
-                    <span class="font-medium text-xs md:text-sm text-slate-300">篩選球種：</span>
-                    <select id="pitchTypeSelect" onchange="updateDashboard()" class="input-field min-w-[160px] font-bold text-amber-300">
+                    <span class="font-medium text-xs md:text-sm text-slate-300">球種：</span>
+                    <select id="pitchTypeSelect" onchange="updateDashboard()" class="input-field min-w-[150px] font-bold text-amber-300">
                         <option value="ALL">全部球種總覽</option>
                     </select>
                 </div>
@@ -207,7 +216,7 @@
             </div>
         </div>
 
-        <!-- 新增：選中日期之逐球詳細資料列表 (Ball-by-Ball Pitch Log) -->
+        <!-- 選中日期之逐球詳細資料列表 -->
         <div class="glass-card p-4 md:p-5 border border-teal-500/30">
             <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 mb-3">
                 <h3 class="text-sm md:text-base font-bold text-teal-300 flex items-center gap-2">
@@ -235,7 +244,6 @@
                         </tr>
                     </thead>
                     <tbody id="pitchLogTableBody" class="divide-y divide-slate-800 font-mono">
-                        <!-- 動態插入逐球資料 -->
                     </tbody>
                 </table>
             </div>
@@ -243,15 +251,29 @@
 
     </div>
 
-    <!-- 編輯選手 Modal -->
+    <!-- 編輯選手 Modal（支援群組設定） -->
     <div id="athleteModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm hidden flex items-center justify-center p-4 z-50">
         <div class="glass-card p-6 w-full max-w-md space-y-4 border border-sky-500/40 shadow-2xl">
             <div class="flex justify-between items-center pb-2 border-b border-slate-700">
-                <h3 class="text-base font-bold text-sky-400 flex items-center gap-2"><i data-lucide="user-cog"></i> 編輯基本資料</h3>
+                <h3 class="text-base font-bold text-sky-400 flex items-center gap-2"><i data-lucide="user-cog"></i> 編輯選手與群組</h3>
                 <button onclick="closeAthleteModal()" class="text-slate-400 hover:text-white"><i data-lucide="x" class="w-5 h-5"></i></button>
             </div>
             <form onsubmit="handleAthleteSubmit(event)" class="space-y-3 text-sm">
                 <div><label class="block text-slate-400 text-xs mb-1">姓名</label><input type="text" id="modalName" readonly class="input-field w-full bg-slate-900 text-slate-400 cursor-not-allowed font-bold"></div>
+                
+                <!-- 群組設定 -->
+                <div>
+                    <label class="block text-slate-400 text-xs mb-1">所屬群組 / 梯隊</label>
+                    <input type="text" id="modalGroup" list="groupSuggestions" placeholder="例如：先發組、牛棚組、二軍..." class="input-field w-full text-indigo-300 font-semibold">
+                    <datalist id="groupSuggestions">
+                        <option value="先發組">
+                        <option value="牛棚組">
+                        <option value="復健組">
+                        <option value="青棒組">
+                        <option value="成棒組">
+                    </datalist>
+                </div>
+
                 <div class="grid grid-cols-2 gap-2">
                     <div><label class="block text-slate-400 text-xs mb-1">性別</label><select id="modalGender" class="input-field w-full"><option value="男">男</option><option value="女">女</option></select></div>
                     <div><label class="block text-slate-400 text-xs mb-1">慣用手</label><select id="modalHand" class="input-field w-full"><option value="R">右投 (RHP)</option><option value="L">左投 (LHP)</option></select></div>
@@ -268,7 +290,7 @@
         </div>
     </div>
 
-    <!-- Firebase 即時同步核心 -->
+    <!-- Firebase 即時同步核心[cite: 3] -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
         import { getDatabase, ref, onValue, set } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
@@ -440,7 +462,7 @@
                         const isStrike = (isStrikeVal === 'Y' || isStrikeVal === 'TRUE');
 
                         if (!window.athletes[name]) {
-                            window.athletes[name] = { gender: '男', hand: 'R', height: '', weight: '' };
+                            window.athletes[name] = { group: '先發組', gender: '男', hand: 'R', height: '', weight: '' };
                         }
 
                         const recordObj = {
@@ -467,26 +489,60 @@
         }
 
         function updateDropdowns() {
+            const grpSelect = document.getElementById('groupSelect');
+            const prevGrp = grpSelect.value || 'ALL';
+
+            // 統計所有存在的群組名稱
+            const groups = new Set();
+            Object.values(window.athletes).forEach(a => {
+                if (a.group && a.group.trim()) groups.add(a.group.trim());
+            });
+
+            grpSelect.innerHTML = `<option value="ALL">全部群組 (${groups.size} 組)</option>`;
+            [...groups].sort().forEach(g => {
+                const opt = document.createElement('option'); opt.value = g; opt.textContent = g;
+                grpSelect.appendChild(opt);
+            });
+            if ([...groups, 'ALL'].includes(prevGrp)) grpSelect.value = prevGrp;
+
+            onGroupChange(false);
+        }
+
+        // 當切換群組時，更新投手下拉選單
+        function onGroupChange(triggerUpdate = true) {
+            const selectedGroup = document.getElementById('groupSelect').value;
             const athSelect = document.getElementById('athleteSelect');
             const prevAth = athSelect.value;
-            const names = [...new Set([...Object.keys(window.athletes), ...window.records.map(r => r.name)])];
-            
-            athSelect.innerHTML = names.length ? '' : '<option value="">請先匯入 CSV</option>';
-            names.forEach(n => {
+
+            // 取得所有選手名單，若有設定群組則過濾
+            let allNames = [...new Set([...Object.keys(window.athletes), ...window.records.map(r => r.name)])];
+            if (selectedGroup !== 'ALL') {
+                allNames = allNames.filter(name => (window.athletes[name] && window.athletes[name].group === selectedGroup));
+            }
+
+            athSelect.innerHTML = allNames.length ? '' : '<option value="">該群組無選手</option>';
+            allNames.forEach(n => {
                 const opt = document.createElement('option'); opt.value = n; opt.textContent = n;
                 athSelect.appendChild(opt);
             });
-            if (names.includes(prevAth)) athSelect.value = prevAth;
-            else if (names.length) athSelect.value = names[0];
 
-            onAthleteChange(false);
+            if (allNames.includes(prevAth)) {
+                athSelect.value = prevAth;
+            } else if (allNames.length > 0) {
+                athSelect.value = allNames[0];
+            }
+
+            onAthleteChange(triggerUpdate);
         }
 
         function onAthleteChange(triggerUpdate = true) {
             const ath = document.getElementById('athleteSelect').value;
             const ptSelect = document.getElementById('pitchTypeSelect');
             const dateSelect = document.getElementById('dateFilterSelect');
-            if (!ath) return;
+            if (!ath) {
+                if (triggerUpdate) updateDashboard();
+                return;
+            }
 
             const athRecords = window.records.filter(r => r.name === ath);
 
@@ -518,11 +574,22 @@
             const ath = document.getElementById('athleteSelect').value;
             const pt = document.getElementById('pitchTypeSelect').value;
             const date = document.getElementById('dateFilterSelect').value;
-            if (!ath) return;
+            
+            if (!ath) {
+                document.getElementById('athleteProfileBadge').innerHTML = '<span class="text-slate-500">無選定投手</span>';
+                updateKPIs([], 0, pt);
+                renderCharts([], pt);
+                renderArsenalTable([]);
+                renderPitchLogTable([], date, pt);
+                return;
+            }
 
             const profile = window.athletes[ath] || {};
+            const groupBadge = profile.group ? `<span class="px-2 py-0.5 rounded bg-indigo-950 text-indigo-300 border border-indigo-700/60 font-semibold">${profile.group}</span>` : '';
+
             document.getElementById('athleteProfileBadge').innerHTML = `
                 <span class="font-bold text-sky-400 text-sm">${ath}</span>
+                ${groupBadge}
                 <span>${profile.hand === 'L' ? '左投 (LHP)' : '右投 (RHP)'}</span>
                 <span>${profile.height ? profile.height + 'cm' : '--'}</span>
                 <span>${profile.weight ? profile.weight + 'kg' : '--'}</span>
@@ -745,10 +812,10 @@
                 const avgEff = effs.length ? (effs.reduce((a,b)=>a+b, 0) / effs.length).toFixed(1) + '%' : '--';
 
                 const ivbs = list.filter(l => l.ivb !== null).map(l => l.ivb);
-                const avgIVB = ivbs.length ? (ivbs.reduce((a,b)=>a+b, 0) / ivbs.length).toFixed(1) + '"' : '--';
+                const avgIVB = ivbs.length ? (ivbs.reduce((a,b)=>a+b, 0) / ivbs.length) : 0;
 
                 const hbs = list.filter(l => l.hb !== null).map(l => l.hb);
-                const avgHB = hbs.length ? (hbs.reduce((a,b)=>a+b, 0) / hbs.length).toFixed(1) + '"' : '--';
+                const avgHB = hbs.length ? (hbs.reduce((a,b)=>a+b, 0) / hbs.length) : 0;
 
                 const strikes = list.filter(l => l.isStrike).length;
                 const strikePct = list.length ? ((strikes / list.length) * 100).toFixed(0) + '%' : '--';
@@ -766,15 +833,14 @@
                         <td class="p-2.5 text-purple-300 font-medium">±${sd}</td>
                         <td class="p-2.5 text-indigo-300">${avgSpin}</td>
                         <td class="p-2.5 text-teal-300">${avgEff}</td>
-                        <td class="p-2.5 text-cyan-300">${avgIVB}</td>
-                        <td class="p-2.5 text-sky-300">${avgHB}</td>
+                        <td class="p-2.5 text-cyan-300">${avgIVB.toFixed(1)}"</td>
+                        <td class="p-2.5 text-sky-300">${avgHB.toFixed(1)}"</td>
                         <td class="p-2.5 text-rose-300 font-semibold">${strikePct}</td>
                     </tr>
                 `;
             });
         }
 
-        // 渲染選定日期的逐球詳細清單
         function renderPitchLogTable(records, selectedDate, selectedPitchType) {
             const tbody = document.getElementById('pitchLogTableBody');
             const titleEl = document.getElementById('pitchListHeaderTitle');
@@ -791,7 +857,6 @@
                 return;
             }
 
-            // 按球數序號或時間倒序排列（最新投的球在最上方）
             const sorted = [...records].sort((a, b) => {
                 if (a.pitchNum && b.pitchNum) return b.pitchNum - a.pitchNum;
                 return (b.time || '').localeCompare(a.time || '');
@@ -843,6 +908,7 @@
             if (!ath) return alert('請先選擇選手');
             const p = window.athletes[ath] || {};
             document.getElementById('modalName').value = ath;
+            document.getElementById('modalGroup').value = p.group || '先發組';
             document.getElementById('modalGender').value = p.gender || '男';
             document.getElementById('modalHand').value = p.hand || 'R';
             document.getElementById('modalHeight').value = p.height || '';
@@ -855,7 +921,10 @@
         function handleAthleteSubmit(e) {
             e.preventDefault();
             const ath = document.getElementById('modalName').value;
+            const groupVal = document.getElementById('modalGroup').value.trim() || '未分組';
+
             window.athletes[ath] = {
+                group: groupVal,
                 gender: document.getElementById('modalGender').value,
                 hand: document.getElementById('modalHand').value,
                 height: parseFloat(document.getElementById('modalHeight').value) || '',
@@ -863,6 +932,7 @@
             };
             saveData();
             closeAthleteModal();
+            updateDropdowns();
             updateDashboard();
         }
     </script>
