@@ -28,7 +28,7 @@
                 <h1 class="text-2xl md:text-3xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-sky-400 via-teal-300 to-indigo-300 flex items-center gap-2.5">
                     <i data-lucide="activity" class="text-sky-400"></i> PRO RAPSODO PITCHING ANALYTICS
                 </h1>
-                <p class="text-slate-400 text-xs md:text-sm mt-1">進階投球運動生物力學、梯隊群組分類與單日球種數據連動</p>
+                <p class="text-slate-400 text-xs md:text-sm mt-1">進階投球運動生物力學、好球帶九宮格與邊角邊緣帶 (Shadow Zone) 監控</p>
             </div>
             
             <div class="flex flex-wrap items-center gap-2.5 w-full md:w-auto">
@@ -54,7 +54,6 @@
         <!-- Filters & Profile Bar -->
         <div class="glass-card p-4 flex flex-col md:flex-row justify-between items-stretch md:items-center gap-4">
             <div class="flex flex-wrap items-center gap-3">
-                <!-- 群組篩選 -->
                 <div class="flex items-center gap-2">
                     <i data-lucide="users" class="text-indigo-400 w-4 h-4"></i>
                     <span class="font-medium text-xs md:text-sm text-slate-300">群組：</span>
@@ -71,7 +70,6 @@
                     </select>
                 </div>
 
-                <!-- 日期選擇：切換時連動球種與總覽表 -->
                 <div class="flex items-center gap-2">
                     <i data-lucide="calendar" class="text-teal-400 w-4 h-4"></i>
                     <span class="font-medium text-xs md:text-sm text-slate-300">訓練日期：</span>
@@ -155,18 +153,21 @@
                     </h2>
                     <span class="text-[11px] text-slate-400">單位：英寸 (Inches)</span>
                 </div>
-                <div id="breakPlot" class="w-full h-[320px]"></div>
+                <div id="breakPlot" class="w-full h-[340px]"></div>
             </div>
 
-            <!-- 圖表 2: 好球帶進壘點 -->
+            <!-- 圖表 2: 好球帶進壘點 (九宮格 + 1球外圍框) -->
             <div class="glass-card p-4">
                 <div class="flex justify-between items-center mb-2">
                     <h2 class="text-sm md:text-base font-bold flex items-center gap-2">
-                        <i data-lucide="crosshair" class="text-rose-400 w-4 h-4"></i> 進壘點與好球帶 (Strike Zone Distribution)
+                        <i data-lucide="crosshair" class="text-rose-400 w-4 h-4"></i> 好球帶九宮格進壘點 (Strike Zone 3x3 + Shadow)
                     </h2>
-                    <span id="strikeRatioBadge" class="text-[11px] px-2 py-0.5 rounded bg-slate-800 text-rose-300 border border-slate-700">好球率: --</span>
+                    <div class="flex items-center gap-2">
+                        <span class="text-[10px] text-amber-300 border border-amber-500/40 bg-amber-950/40 px-1.5 py-0.5 rounded">黃框: +1球邊角帶</span>
+                        <span id="strikeRatioBadge" class="text-[11px] px-2 py-0.5 rounded bg-slate-800 text-rose-300 border border-slate-700">好球率: --</span>
+                    </div>
                 </div>
-                <div id="zonePlot" class="w-full h-[320px]"></div>
+                <div id="zonePlot" class="w-full h-[340px]"></div>
             </div>
 
             <!-- 圖表 3: 時序趨勢 -->
@@ -561,19 +562,16 @@
             if (dates.includes(prevDate)) dateSelect.value = prevDate;
             else dateSelect.value = 'ALL';
 
-            // 依據目前日期選單更新球種選單
             updatePitchTypeOptions();
 
             if (triggerUpdate) updateDashboard();
         }
 
-        // 當使用者切換日期時觸發
         function onDateFilterChange() {
             updatePitchTypeOptions();
             updateDashboard();
         }
 
-        // 核心連動：依據選取的日期，動態更新球種下拉選單的球數
         function updatePitchTypeOptions() {
             const ath = document.getElementById('athleteSelect').value;
             const selectedDate = document.getElementById('dateFilterSelect').value;
@@ -581,7 +579,6 @@
             const prevPt = ptSelect.value;
             if (!ath) return;
 
-            // 根據是否選取特定日期篩選資料
             let athRecords = window.records.filter(r => r.name === ath);
             if (selectedDate !== 'ALL') {
                 athRecords = athRecords.filter(r => r.date === selectedDate);
@@ -591,7 +588,6 @@
             athRecords.forEach(r => { ptCounts[r.pitchType] = (ptCounts[r.pitchType] || 0) + 1; });
             const pTypes = Object.keys(ptCounts).sort((a,b) => ptCounts[b] - ptCounts[a]);
 
-            const dateText = selectedDate === 'ALL' ? '全部' : selectedDate;
             ptSelect.innerHTML = `<option value="ALL">全部球種總覽 (${athRecords.length} 球)</option>`;
             pTypes.forEach(pt => {
                 const opt = document.createElement('option');
@@ -632,18 +628,16 @@
                 <span>${profile.weight ? profile.weight + 'kg' : '--'}</span>
             `;
 
-            // 當前篩選條件
             let filtered = window.records.filter(r => r.name === ath);
             if (date !== 'ALL') filtered = filtered.filter(r => r.date === date);
 
-            const totalInSelectedDate = filtered.length; // 該選定日期下的總球數
+            const totalInSelectedDate = filtered.length;
 
             if (pt !== 'ALL') filtered = filtered.filter(r => r.pitchType === pt);
 
             updateKPIs(filtered, totalInSelectedDate, pt);
             renderCharts(filtered, pt);
             
-            // 重要：軍火庫總覽表傳入「選定日期內的所有球種資料」
             const arsenalData = window.records.filter(r => r.name === ath && (date === 'ALL' || r.date === date));
             renderArsenalTable(arsenalData, date);
 
@@ -750,7 +744,7 @@
                 ]
             }, { responsive: true, displayModeBar: false });
 
-            // 2. Strike Zone Plot
+            // 2. Strike Zone Plot (九宮格 + 外圍一球距離框)
             const zoneTraces = [];
             const validPlateData = data.filter(d => d.px !== null && d.pz !== null);
             const strikeCount = validPlateData.filter(d => d.isStrike).length;
@@ -775,12 +769,73 @@
                 });
             });
 
+            // 九宮格與外框尺寸設定 (單位: Inches)
+            // 標準好球帶寬度 17 吋 (-8.5 ~ 8.5)，高度 18 ~ 42 吋 (總高 24 吋)
+            const zX0 = -8.5, zX1 = 8.5;
+            const zY0 = 18.0, zY1 = 42.0;
+            
+            // 內部九宮格切線 (每等分: 寬 5.67", 高 8")
+            const col1 = -8.5 + (17.0 / 3.0); // -2.83
+            const col2 = -8.5 + (17.0 / 3.0) * 2; // +2.83
+            const row1 = 18.0 + (24.0 / 3.0); // 26.0
+            const row2 = 18.0 + (24.0 / 3.0) * 2; // 34.0
+
+            // 棒球直徑約 2.94 吋 (一球距離外圍外擴)
+            const ballRadius = 2.94;
+            const sX0 = zX0 - ballRadius; // -11.44
+            const sX1 = zX1 + ballRadius; // +11.44
+            const sY0 = zY0 - ballRadius; // 15.06
+            const sY1 = zY1 + ballRadius; // 44.94
+
             Plotly.newPlot('zonePlot', zoneTraces, {
                 ...darkLayout,
                 xaxis: { title: '本壘板水平位置 (Inches)', range: [-26, 26], zerolinecolor: '#334155', gridcolor: '#1e293b' },
                 yaxis: { title: '離地高度 (Inches)', range: [0, 60], zerolinecolor: '#334155', gridcolor: '#1e293b' },
                 shapes: [
-                    { type: 'rect', xref: 'x', yref: 'y', x0: -8.5, y0: 18, x1: 8.5, y1: 42, line: { color: '#f43f5e', width: 2 } }
+                    // 1. 最外圍：加一個球距離的邊角誘空框 (Shadow Zone)
+                    {
+                        type: 'rect', xref: 'x', yref: 'y',
+                        x0: sX0, y0: sY0, x1: sX1, y1: sY1,
+                        line: { color: '#f59e0b', width: 1.5, dash: 'dot' },
+                        fillcolor: 'rgba(245, 158, 11, 0.04)'
+                    },
+                    // 2. 好球帶實體大外框 (Strike Zone Border)
+                    {
+                        type: 'rect', xref: 'x', yref: 'y',
+                        x0: zX0, y0: zY0, x1: zX1, y1: zY1,
+                        line: { color: '#f43f5e', width: 2.5 }
+                    },
+                    // 3. 九宮格 - 垂直分隔線 1
+                    {
+                        type: 'line', xref: 'x', yref: 'y',
+                        x0: col1, y0: zY0, x1: col1, y1: zY1,
+                        line: { color: 'rgba(244, 63, 94, 0.45)', width: 1.2, dash: 'dash' }
+                    },
+                    // 4. 九宮格 - 垂直分隔線 2
+                    {
+                        type: 'line', xref: 'x', yref: 'y',
+                        x0: col2, y0: zY0, x1: col2, y1: zY1,
+                        line: { color: 'rgba(244, 63, 94, 0.45)', width: 1.2, dash: 'dash' }
+                    },
+                    // 5. 九宮格 - 水平分隔線 1
+                    {
+                        type: 'line', xref: 'x', yref: 'y',
+                        x0: zX0, y0: row1, x1: zX1, y1: row1,
+                        line: { color: 'rgba(244, 63, 94, 0.45)', width: 1.2, dash: 'dash' }
+                    },
+                    // 6. 九宮格 - 水平分隔線 2
+                    {
+                        type: 'line', xref: 'x', yref: 'y',
+                        x0: zX0, y0: row2, x1: zX1, y1: row2,
+                        line: { color: 'rgba(244, 63, 94, 0.45)', width: 1.2, dash: 'dash' }
+                    },
+                    // 7. 本壘板形狀底座 (Home Plate Outline)
+                    {
+                        type: 'path', xref: 'x', yref: 'y',
+                        path: 'M -8.5 2.5 L 8.5 2.5 L 8.5 1.2 L 0 0 L -8.5 1.2 Z',
+                        fillcolor: 'rgba(148, 163, 184, 0.25)',
+                        line: { color: '#94a3b8', width: 1 }
+                    }
                 ]
             }, { responsive: true, displayModeBar: false });
 
@@ -823,7 +878,6 @@
             }, { responsive: true, displayModeBar: false });
         }
 
-        // 軍火庫總覽表：根據選取的日期精準計算
         function renderArsenalTable(records, selectedDate) {
             const tbody = document.getElementById('arsenalTableBody');
             const dateBadge = document.getElementById('arsenalTableDateBadge');
@@ -863,10 +917,10 @@
                 const avgEff = effs.length ? (effs.reduce((a,b)=>a+b, 0) / effs.length).toFixed(1) + '%' : '--';
 
                 const ivbs = list.filter(l => l.ivb !== null).map(l => l.ivb);
-                const avgIVB = ivbs.length ? (ivbs.reduce((a,b)=>a+b, 0) / ivbs.length).toFixed(1) + '"' : '--';
+                const avgIVB = ivbs.length ? (ivbs.reduce((a,b)=>a+b, 0) / ivbs.length) : 0;
 
                 const hbs = list.filter(l => l.hb !== null).map(l => l.hb);
-                const avgHB = hbs.length ? (hbs.reduce((a,b)=>a+b, 0) / hbs.length).toFixed(1) + '"' : '--';
+                const avgHB = hbs.length ? (hbs.reduce((a,b)=>a+b, 0) / hbs.length) : 0;
 
                 const strikes = list.filter(l => l.isStrike).length;
                 const strikePct = list.length ? ((strikes / list.length) * 100).toFixed(0) + '%' : '--';
@@ -884,8 +938,8 @@
                         <td class="p-2.5 text-purple-300 font-medium">±${sd}</td>
                         <td class="p-2.5 text-indigo-300">${avgSpin}</td>
                         <td class="p-2.5 text-teal-300">${avgEff}</td>
-                        <td class="p-2.5 text-cyan-300">${avgIVB}</td>
-                        <td class="p-2.5 text-sky-300">${avgHB}</td>
+                        <td class="p-2.5 text-cyan-300">${avgIVB.toFixed(1)}"</td>
+                        <td class="p-2.5 text-sky-300">${avgHB.toFixed(1)}"</td>
                         <td class="p-2.5 text-rose-300 font-semibold">${strikePct}</td>
                     </tr>
                 `;
